@@ -516,6 +516,13 @@ export default {
             protocol: "协议",
             baseUrl: "接口地址",
             serverManaged: "由服务端管理",
+            serverManagedDescription: "私有化模式不会在浏览器输入或保存 Key。管理员请在服务器 /opt/infinite-canvas/.env 设置 AI_UPSTREAM_API_KEY，然后重启容器。",
+            serverStatus: {
+                loading: "正在检查服务端 Key…",
+                configured: "服务端 Key 已配置",
+                missing: "服务端 Key 未配置",
+                unavailable: "服务端网关不可用",
+            },
             models: "渠道模型",
             modelDescription: "已选 {{count}} 个；为每个模型指定能力并可自定义调用脚本。",
             selectModels: "选择模型",

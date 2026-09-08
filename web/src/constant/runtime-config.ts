@@ -10,6 +10,7 @@ type RuntimeConfig = {
     ANALYTICS_BAIDU_ID?: string; // Baidu Analytics site ID
     PRIVATE_DEPLOYMENT?: string | boolean;
     AI_GATEWAY_URL?: string;
+    AI_ALLOW_CLIENT_KEYS?: string | boolean;
 };
 
 declare global {
@@ -31,3 +32,4 @@ export const ANALYTICS_GA4_ID = read("ANALYTICS_GA4_ID", import.meta.env.VITE_AN
 export const ANALYTICS_BAIDU_ID = read("ANALYTICS_BAIDU_ID", import.meta.env.VITE_ANALYTICS_BAIDU_ID);
 export const PRIVATE_DEPLOYMENT = String(runtime.PRIVATE_DEPLOYMENT ?? import.meta.env.VITE_PRIVATE_DEPLOYMENT ?? "false").toLowerCase() === "true";
 export const AI_GATEWAY_URL = read("AI_GATEWAY_URL", import.meta.env.VITE_AI_GATEWAY_URL, "/api/ai");
+export const AI_ALLOW_CLIENT_KEYS = String(runtime.AI_ALLOW_CLIENT_KEYS ?? import.meta.env.VITE_AI_ALLOW_CLIENT_KEYS ?? "false").toLowerCase() === "true";

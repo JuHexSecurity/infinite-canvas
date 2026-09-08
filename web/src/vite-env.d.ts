@@ -13,4 +13,5 @@ interface ImportMetaEnv {
     readonly VITE_ANALYTICS_BAIDU_ID?: string;
     readonly VITE_PRIVATE_DEPLOYMENT?: string;
     readonly VITE_AI_GATEWAY_URL?: string;
+    readonly VITE_AI_ALLOW_CLIENT_KEYS?: string;
 }

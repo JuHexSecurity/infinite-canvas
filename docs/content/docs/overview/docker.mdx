@@ -41,7 +41,7 @@ The main application container serves the frontend and can optionally start the 
 
 ## Private AI gateway
 
-For team deployments, set `PRIVATE_DEPLOYMENT=true` and inject `AI_UPSTREAM_BASE_URL` and `AI_UPSTREAM_API_KEY` through an untracked `.env` file or a deployment secret store. The container starts a same-origin AI gateway at `/api/ai`, so users do not need to run a local CORS proxy and the upstream key is not put in the frontend configuration. The gateway only forwards `/v1` and `/v1beta` paths; put authentication or an internal-network restriction in front of it before exposing the deployment.
+For team deployments, set `PRIVATE_DEPLOYMENT=true`. Set `AI_ALLOW_CLIENT_KEYS=true` for an internal deployment where each user may enter a provider key in the browser; the key stays in that user’s browser storage and requests still pass through the same-origin gateway. Set it to `false` to use only `AI_UPSTREAM_API_KEY` from the server environment and hide the browser key field. The gateway only forwards `/v1` and `/v1beta` paths; put authentication or an internal-network restriction in front of it before exposing the deployment.
 
 ## Optional analytics
 

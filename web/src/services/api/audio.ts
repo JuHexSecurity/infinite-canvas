@@ -3,7 +3,7 @@ import axios from "axios";
 import i18n from "@/i18n";
 import { audioMimeType, normalizeAudioFormatValue, normalizeAudioSpeedValue, normalizeAudioVoiceValue } from "@/lib/audio-generation";
 import { uploadMediaFile, type UploadedFile } from "@/services/file-storage";
-import { buildApiUrl, isPrivateDeployment, resolveModelRequestConfig, resolveModelScript, withLocalProxy, type AiConfig } from "@/stores/use-config-store";
+import { buildApiUrl, isServerManagedKeyDeployment, resolveModelRequestConfig, resolveModelScript, withLocalProxy, type AiConfig } from "@/stores/use-config-store";
 import { runModelPlugin } from "./model-plugin";
 
 type RequestOptions = { signal?: AbortSignal };
@@ -15,7 +15,7 @@ function aiApiUrl(config: AiConfig, path: string) {
 
 function aiHeaders(config: AiConfig) {
     return {
-        ...(isPrivateDeployment() ? {} : { Authorization: `Bearer ${config.apiKey}` }),
+        ...(isServerManagedKeyDeployment() ? {} : { Authorization: `Bearer ${config.apiKey}` }),
         "Content-Type": "application/json",
     };
 }
@@ -28,7 +28,7 @@ export async function requestAudioGeneration(config: AiConfig, prompt: string, o
     if (script) {
         if (!model) throw new Error(apiText("audioModelRequired"));
         if (!requestConfig.baseUrl.trim()) throw new Error(apiText("baseUrlRequired"));
-        if (!isPrivateDeployment() && !requestConfig.apiKey.trim()) throw new Error(apiText("apiKeyRequired"));
+        if (!isServerManagedKeyDeployment() && !requestConfig.apiKey.trim()) throw new Error(apiText("apiKeyRequired"));
         try {
             const result = await runModelPlugin({
                 capability: "audio",
@@ -88,7 +88,7 @@ export async function storeGeneratedAudio(blob: Blob, format = "mp3"): Promise<U
 function assertAudioConfig(config: AiConfig, model: string) {
     if (!model) throw new Error(apiText("audioModelRequired"));
     if (!config.baseUrl.trim()) throw new Error(apiText("baseUrlRequired"));
-    if (!isPrivateDeployment() && !config.apiKey.trim()) throw new Error(apiText("apiKeyRequired"));
+    if (!isServerManagedKeyDeployment() && !config.apiKey.trim()) throw new Error(apiText("apiKeyRequired"));
     if (config.apiFormat === "gemini") throw new Error(apiText("geminiAudioUnsupported"));
 }
 

@@ -516,6 +516,13 @@ export default {
             protocol: "Protocol",
             baseUrl: "API endpoint",
             serverManaged: "managed by server",
+            serverManagedDescription: "Private deployments never enter or store the key in the browser. An administrator must set AI_UPSTREAM_API_KEY in /opt/infinite-canvas/.env and restart the container.",
+            serverStatus: {
+                loading: "Checking server key…",
+                configured: "Server key is configured",
+                missing: "Server key is not configured",
+                unavailable: "Private gateway is unavailable",
+            },
             models: "Provider models",
             modelDescription: "{{count}} selected; assign a capability to each model and optionally customize its request script.",
             selectModels: "Select models",

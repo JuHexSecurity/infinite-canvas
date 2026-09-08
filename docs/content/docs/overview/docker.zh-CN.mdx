@@ -70,9 +70,10 @@ AI_UPSTREAM_BASE_URL=https://api.example.com
 AI_UPSTREAM_API_KEY=replace-with-a-secret
 AI_UPSTREAM_API_FORMAT=openai
 AI_GATEWAY_URL=/api/ai
+AI_ALLOW_CLIENT_KEYS=true
 ```
 
-私有化网关只转发 `/v1` 和 `/v1beta` 请求，并从服务器环境变量注入认证头。不要把 Key 写入 Compose 文件、前端运行时配置、README、截图或公开仓库；生产环境还应在外层反向代理增加登录、内网访问限制或其他认证。
+内网企业部署可以将 `AI_ALLOW_CLIENT_KEYS` 设为 `true`，此时用户可以在网页渠道配置中填写自己的 API Key，Key 保存在该用户浏览器本地，再由同源网关转发；设为 `false` 时则只从服务器环境变量注入 Key，网页不会显示输入框。私有化网关只转发 `/v1` 和 `/v1beta` 请求；生产环境还应在外层反向代理增加登录或内网访问限制。
 
 ## 统计分析（可选）
 

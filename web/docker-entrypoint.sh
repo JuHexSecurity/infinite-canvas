@@ -20,6 +20,7 @@ sanitize_runtime_url() {
 
 PRIVATE_MODE=$(printf '%s' "${PRIVATE_DEPLOYMENT:-false}" | tr '[:upper:]' '[:lower:]')
 GATEWAY_URL=$(sanitize_runtime_url "${AI_GATEWAY_URL:-/api/ai}")
+ALLOW_CLIENT_KEYS=$(printf '%s' "${AI_ALLOW_CLIENT_KEYS:-false}" | tr '[:upper:]' '[:lower:]')
 
 if [ "$PRIVATE_MODE" = "true" ]; then
     node /opt/infinite-canvas/private-gateway/index.js &
@@ -30,6 +31,7 @@ window.__RUNTIME_CONFIG__ = {
   ANALYTICS_GA4_ID: "${GA4_ID}",
   ANALYTICS_BAIDU_ID: "${BAIDU_ID}",
   PRIVATE_DEPLOYMENT: "${PRIVATE_MODE}",
-  AI_GATEWAY_URL: "${GATEWAY_URL}"
+  AI_GATEWAY_URL: "${GATEWAY_URL}",
+  AI_ALLOW_CLIENT_KEYS: "${ALLOW_CLIENT_KEYS}"
 };
 EOF

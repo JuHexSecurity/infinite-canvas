@@ -7,6 +7,7 @@ import { URL } from "node:url";
 const port = Number(process.env.AI_GATEWAY_PORT || 8787);
 const host = process.env.AI_GATEWAY_HOST || "127.0.0.1";
 const apiFormat = String(process.env.AI_UPSTREAM_API_FORMAT || "openai").toLowerCase() === "gemini" ? "gemini" : "openai";
+const allowClientKeys = String(process.env.AI_ALLOW_CLIENT_KEYS || "false").toLowerCase() === "true";
 const allowedOrigins = String(process.env.AI_CORS_ORIGIN || "")
     .split(",")
     .map((value) => value.trim())
@@ -59,12 +60,24 @@ function targetUrl(req) {
 
 function requestHeaders(req, target) {
     const headers = { ...req.headers, host: target.host };
+    const clientAuthorization = headers.authorization;
+    const clientApiKey = headers["x-api-key"];
+    const clientGoogleApiKey = headers["x-goog-api-key"];
     for (const name of ["connection", "origin", "referer", "x-forwarded-for", "x-forwarded-host", "x-forwarded-proto", "authorization", "x-api-key", "x-goog-api-key"]) delete headers[name];
     const key = String(process.env.AI_UPSTREAM_API_KEY || "").trim();
     if (apiFormat === "gemini") {
         if (key) headers["x-goog-api-key"] = key;
+        else if (allowClientKeys) {
+            if (clientGoogleApiKey) headers["x-goog-api-key"] = clientGoogleApiKey;
+            else if (clientApiKey) headers["x-api-key"] = clientApiKey;
+            else if (clientAuthorization) headers.authorization = clientAuthorization;
+        }
     } else if (key) {
         headers.authorization = `Bearer ${key}`;
+    } else if (allowClientKeys) {
+        if (clientAuthorization) headers.authorization = clientAuthorization;
+        else if (clientApiKey) headers["x-api-key"] = clientApiKey;
+        else if (clientGoogleApiKey) headers["x-goog-api-key"] = clientGoogleApiKey;
     }
     return headers;
 }
@@ -107,8 +120,8 @@ const server = http.createServer((req, res) => {
         return;
     }
     if (req.url === "/healthz") {
-        const configured = Boolean(upstreamBaseUrl() && String(process.env.AI_UPSTREAM_API_KEY || "").trim());
-        sendJson(req, res, configured ? 200 : 503, { service: "infinite-canvas-private-gateway", configured, apiFormat });
+        const configured = Boolean(upstreamBaseUrl() && (String(process.env.AI_UPSTREAM_API_KEY || "").trim() || allowClientKeys));
+        sendJson(req, res, configured ? 200 : 503, { service: "infinite-canvas-private-gateway", configured, clientKeysAllowed: allowClientKeys, apiFormat });
         return;
     }
     forward(req, res);

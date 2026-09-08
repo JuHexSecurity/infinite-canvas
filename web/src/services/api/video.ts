@@ -6,7 +6,7 @@ import { dataUrlToFile, readFileAsDataUrl } from "@/lib/image-utils";
 import { clampVideoSeconds, computeVideoSize, inferVideoRatio } from "@/lib/media-size";
 import { getMediaBlob, resolveMediaUrl, uploadMediaFile, type UploadedFile } from "@/services/file-storage";
 import { imageToDataUrl } from "@/services/image-storage";
-import { boolConfig, buildApiUrl, isPrivateDeployment, modelOptionName, resolveModelRequestConfig, resolveModelScript, withLocalProxy, type AiConfig } from "@/stores/use-config-store";
+import { boolConfig, buildApiUrl, isServerManagedKeyDeployment, modelOptionName, resolveModelRequestConfig, resolveModelScript, withLocalProxy, type AiConfig } from "@/stores/use-config-store";
 import { runModelPlugin } from "./model-plugin";
 import type { ReferenceImage } from "@/types/image";
 import type { ReferenceAudio, ReferenceVideo } from "@/types/media";
@@ -38,7 +38,7 @@ function aiApiUrl(config: AiConfig, path: string) {
 
 function aiHeaders(config: AiConfig, contentType?: string) {
     return {
-        ...(isPrivateDeployment() ? {} : { Authorization: `Bearer ${config.apiKey}` }),
+        ...(isServerManagedKeyDeployment() ? {} : { Authorization: `Bearer ${config.apiKey}` }),
         ...(contentType ? { "Content-Type": contentType } : {}),
     };
 }
@@ -92,7 +92,7 @@ export async function pollVideoGenerationTask(config: AiConfig, task: VideoGener
 
 async function createPluginVideoTask(config: AiConfig, model: string, script: string, prompt: string, references: ReferenceImage[], options?: VideoMediaOptions): Promise<VideoGenerationTask> {
     if (!config.baseUrl.trim()) throw new Error(apiText("baseUrlRequired"));
-    if (!isPrivateDeployment() && !config.apiKey.trim()) throw new Error(apiText("apiKeyRequired"));
+    if (!isServerManagedKeyDeployment() && !config.apiKey.trim()) throw new Error(apiText("apiKeyRequired"));
     const refs = await Promise.all(references.map((image) => imageToDataUrl(image)));
     const videos = await Promise.all((options?.videos || []).map((video) => referenceMediaToFile(video, "ref.mp4", "invalidReferenceVideo", options)));
     const audios = await Promise.all((options?.audios || []).map((audio) => referenceMediaToFile(audio, "ref.mp3", "invalidReferenceAudio", options)));
@@ -244,7 +244,7 @@ async function pollGeminiVideoTask(config: AiConfig, task: VideoGenerationTask, 
         if (!state.done) return { status: "pending" };
         const uri = state.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri;
         if (!uri) return { status: "failed", error: apiText("noPlayableVideo") };
-        const url = uri.includes("key=") || isPrivateDeployment() ? uri : `${uri}${uri.includes("?") ? "&" : "?"}key=${config.apiKey}`;
+        const url = uri.includes("key=") || isServerManagedKeyDeployment() ? uri : `${uri}${uri.includes("?") ? "&" : "?"}key=${config.apiKey}`;
         return { status: "completed", result: await videoResultFromUrl(url, options) };
     } catch (error) {
         throw new Error(readAxiosError(error, apiText("videoTaskQueryFailed")));
@@ -254,7 +254,7 @@ async function pollGeminiVideoTask(config: AiConfig, task: VideoGenerationTask, 
 function assertVideoConfig(config: AiConfig, model: string) {
     if (!model) throw new Error(apiText("videoModelRequired"));
     if (!config.baseUrl.trim()) throw new Error(apiText("baseUrlRequired"));
-    if (!isPrivateDeployment() && !config.apiKey.trim()) throw new Error(apiText("apiKeyRequired"));
+    if (!isServerManagedKeyDeployment() && !config.apiKey.trim()) throw new Error(apiText("apiKeyRequired"));
 }
 
 function geminiVideoBaseUrl(config: Pick<AiConfig, "baseUrl">) {
@@ -272,7 +272,7 @@ function geminiOperationUrl(config: Pick<AiConfig, "baseUrl">, name: string) {
 }
 
 function geminiVideoHeaders(config: Pick<AiConfig, "apiKey">) {
-    return { ...(isPrivateDeployment() ? {} : { "x-goog-api-key": config.apiKey }), "Content-Type": "application/json" };
+    return { ...(isServerManagedKeyDeployment() ? {} : { "x-goog-api-key": config.apiKey }), "Content-Type": "application/json" };
 }
 
 function videoAspectRatio(size: string) {

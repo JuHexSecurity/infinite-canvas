@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { nanoid } from "nanoid";
 
-import { AI_GATEWAY_URL, PRIVATE_DEPLOYMENT } from "@/constant/runtime-config";
+import { AI_ALLOW_CLIENT_KEYS, AI_GATEWAY_URL, PRIVATE_DEPLOYMENT } from "@/constant/runtime-config";
 import i18n from "@/i18n";
 
 export type ApiCallFormat = "openai" | "gemini";
@@ -82,8 +82,12 @@ export function isPrivateDeployment() {
     return PRIVATE_DEPLOYMENT && Boolean(AI_GATEWAY_URL.trim());
 }
 
+export function isServerManagedKeyDeployment() {
+    return isPrivateDeployment() && !AI_ALLOW_CLIENT_KEYS;
+}
+
 export function hasConfiguredApiKey(config: Pick<AiConfig, "apiKey">) {
-    return isPrivateDeployment() || Boolean(config.apiKey.trim());
+    return isServerManagedKeyDeployment() || Boolean(config.apiKey.trim());
 }
 
 export const defaultConfig: AiConfig = {
@@ -209,7 +213,7 @@ export function resolveModelScript(config: AiConfig, value: string) {
 
 function isAiConfigReady(config: AiConfig, model: string) {
     const channel = resolveModelChannel(config, model);
-    return Boolean(model.trim() && channel.baseUrl.trim() && (isPrivateDeployment() || channel.apiKey.trim()));
+    return Boolean(model.trim() && channel.baseUrl.trim() && (isServerManagedKeyDeployment() || channel.apiKey.trim()));
 }
 
 export const useConfigStore = create<ConfigStore>()(

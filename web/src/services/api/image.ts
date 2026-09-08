@@ -1,7 +1,7 @@
 import axios from "axios";
 
 import i18n from "@/i18n";
-import { buildApiUrl, isPrivateDeployment, resolveModelRequestConfig, resolveModelScript, withLocalProxy, type AiConfig, type ModelChannel } from "@/stores/use-config-store";
+import { buildApiUrl, isServerManagedKeyDeployment, resolveModelRequestConfig, resolveModelScript, withLocalProxy, type AiConfig, type ModelChannel } from "@/stores/use-config-store";
 import { normalizePluginImages, runModelPlugin } from "./model-plugin";
 import { nanoid } from "nanoid";
 import { dataUrlToFile } from "@/lib/image-utils";
@@ -345,7 +345,7 @@ function aiApiUrl(config: AiConfig, path: string) {
 
 function aiHeaders(config: AiConfig, contentType?: string) {
     return {
-        ...(isPrivateDeployment() ? {} : { Authorization: `Bearer ${config.apiKey}` }),
+        ...(isServerManagedKeyDeployment() ? {} : { Authorization: `Bearer ${config.apiKey}` }),
         ...(contentType ? { "Content-Type": contentType } : {}),
     };
 }
@@ -368,7 +368,7 @@ function geminiApiUrl(config: Pick<AiConfig, "baseUrl" | "model">, action?: "gen
 
 function geminiHeaders(config: Pick<AiConfig, "apiKey">) {
     return {
-        ...(isPrivateDeployment() ? {} : { "x-goog-api-key": config.apiKey }),
+        ...(isServerManagedKeyDeployment() ? {} : { "x-goog-api-key": config.apiKey }),
         "Content-Type": "application/json",
     };
 }
@@ -895,7 +895,7 @@ export async function fetchImageModels(config: Pick<AiConfig, "baseUrl" | "apiKe
                 .sort((a, b) => a.localeCompare(b));
         }
         const response = await axios.get<{ data?: Array<{ id?: string }>; error?: { message?: string } }>(buildApiUrl(config.baseUrl, "/models"), {
-            headers: isPrivateDeployment() ? undefined : { Authorization: `Bearer ${config.apiKey}` },
+            headers: isServerManagedKeyDeployment() ? undefined : { Authorization: `Bearer ${config.apiKey}` },
         });
         return (response.data.data || [])
             .map((model) => model.id)

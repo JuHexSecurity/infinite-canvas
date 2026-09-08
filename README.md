@@ -140,13 +140,14 @@ Linux/macOS 使用 `cp .env.example .env`。上面的命令从当前源码构建
 | 变量 | 说明 |
 | --- | --- |
 | `PRIVATE_DEPLOYMENT` | 设置为 `true`，启动同源 AI 网关 |
+| `AI_ALLOW_CLIENT_KEYS` | 内网部署可设置为 `true`，允许每个用户在浏览器本地填写自己的 Key，经同源网关转发；设为 `false` 时只使用服务端 Key |
 | `AI_UPSTREAM_BASE_URL` | 上游 OpenAI/Gemini 兼容接口地址，不含真实 Key |
 | `AI_UPSTREAM_API_KEY` | 只放在服务器环境或未提交的 `.env` 中 |
 | `AI_UPSTREAM_API_FORMAT` | `openai` 或 `gemini` |
 | `AI_GATEWAY_URL` | 前端网关地址，默认 `/api/ai` |
 | `AI_CORS_ORIGIN` | 需要跨域访问时的允许来源；同源部署通常无需调整 |
 
-私有化模式默认使用单个服务端渠道，用户在网页中只选择模型，不填写上游 Key。网关只接受 `/v1` 和 `/v1beta` 路径，并由 Nginx 转发到同一容器内的网关进程。请在内网或带认证的反向代理后使用，不要把未加认证的网关暴露到公网。
+私有化模式支持两种 Key 策略：`AI_ALLOW_CLIENT_KEYS=false` 时使用单个服务端 Key，用户不填写上游 Key；内网企业部署可设置为 `true`，用户可以在网页中填写自己的 Key，Key 只保存在该用户浏览器本地并经同源网关转发。网关只接受 `/v1` 和 `/v1beta` 路径，并由 Nginx 转发到同一容器内的网关进程。请在内网或带认证的反向代理后使用，不要把未加认证的网关暴露到公网。
 
 ### 安全说明
 

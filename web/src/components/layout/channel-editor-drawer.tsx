@@ -1,9 +1,10 @@
-import { Button, Drawer, Input, Segmented, Select, Space } from "antd";
+import { Alert, Button, Drawer, Input, Segmented, Select, Space } from "antd";
 import { ListPlus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { defaultBaseUrlForApiFormat, guessCapability, isPrivateDeployment, normalizeChannelModels, type ApiCallFormat, type ChannelModel, type ModelCapability, type ModelChannel } from "@/stores/use-config-store";
+import { AI_GATEWAY_URL } from "@/constant/runtime-config";
+import { defaultBaseUrlForApiFormat, guessCapability, isServerManagedKeyDeployment, normalizeChannelModels, type ApiCallFormat, type ChannelModel, type ModelCapability, type ModelChannel } from "@/stores/use-config-store";
 import { ModelScriptEditor } from "./model-script-editor";
 import { ModelSelectModal } from "./model-select-modal";
 
@@ -14,6 +15,7 @@ export function ChannelEditorDrawer({ open, channel, onSave, onClose }: { open: 
     const [draft, setDraft] = useState<ModelChannel | null>(channel);
     const [selectOpen, setSelectOpen] = useState(false);
     const [scriptTarget, setScriptTarget] = useState<ScriptTarget | null>(null);
+    const [gatewayStatus, setGatewayStatus] = useState<"loading" | "configured" | "missing" | "unavailable">("loading");
     const apiFormatOptions: Array<{ label: string; value: ApiCallFormat }> = [
         { label: "OpenAI", value: "openai" },
         { label: "Gemini", value: "gemini" },
@@ -23,6 +25,23 @@ export function ChannelEditorDrawer({ open, channel, onSave, onClose }: { open: 
     useEffect(() => {
         if (open && channel) setDraft(channel);
     }, [open, channel]);
+
+    useEffect(() => {
+        if (!open || !isServerManagedKeyDeployment()) return;
+        let active = true;
+        setGatewayStatus("loading");
+        const origin = typeof window === "undefined" ? "http://private-gateway.local" : window.location.origin;
+        const gateway = new URL(AI_GATEWAY_URL || "/api/ai", origin);
+        fetch(new URL("healthz", `${gateway.toString().replace(/\/$/, "")}/`).toString(), { cache: "no-store" })
+            .then(async (response) => {
+                const payload = (await response.json().catch(() => null)) as { configured?: boolean } | null;
+                if (active) setGatewayStatus(response.ok && payload?.configured ? "configured" : "missing");
+            })
+            .catch(() => active && setGatewayStatus("unavailable"));
+        return () => {
+            active = false;
+        };
+    }, [open]);
 
     if (!draft) return null;
 
@@ -75,12 +94,23 @@ export function ChannelEditorDrawer({ open, channel, onSave, onClose }: { open: 
                 </label>
                 <label className="block md:col-span-2">
                     <span className="mb-1 block text-sm font-medium">{t("config.channelEditor.baseUrl")}</span>
-                    <Input value={draft.baseUrl} onChange={(event) => patch({ baseUrl: event.target.value })} placeholder="https://api.example.com" readOnly={isPrivateDeployment()} />
+                    <Input value={draft.baseUrl} onChange={(event) => patch({ baseUrl: event.target.value })} placeholder="https://api.example.com" readOnly={isServerManagedKeyDeployment()} />
                 </label>
-                <label className="block md:col-span-2">
-                    <span className="mb-1 block text-sm font-medium">API Key{isPrivateDeployment() ? ` (${t("config.channelEditor.serverManaged")})` : ""}</span>
-                    <Input.Password value={isPrivateDeployment() ? "" : draft.apiKey} onChange={(event) => patch({ apiKey: event.target.value })} placeholder={isPrivateDeployment() ? t("config.channelEditor.serverManaged") : "sk-..."} disabled={isPrivateDeployment()} />
-                </label>
+                {isServerManagedKeyDeployment() ? (
+                    <div className="md:col-span-2">
+                        <Alert
+                            showIcon
+                            type={gatewayStatus === "configured" ? "success" : "warning"}
+                            message={t(`config.channelEditor.serverStatus.${gatewayStatus}`)}
+                            description={t("config.channelEditor.serverManagedDescription")}
+                        />
+                    </div>
+                ) : (
+                    <label className="block md:col-span-2">
+                        <span className="mb-1 block text-sm font-medium">API Key</span>
+                        <Input.Password value={draft.apiKey} onChange={(event) => patch({ apiKey: event.target.value })} placeholder="sk-..." />
+                    </label>
+                )}
             </div>
 
             <div className="mt-6 mb-3 flex flex-wrap items-center justify-between gap-2">
