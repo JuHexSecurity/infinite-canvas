@@ -6,9 +6,9 @@
 
 <p align="center">
   <a href="https://linux.do/"><img src="https://img.shields.io/badge/Linux.do-Community-2b6de8?style=flat-square" alt="Linux.do"></a>
-  <a href="https://render.com/deploy?repo=https://github.com/basketikun/infinite-canvas"><img src="https://img.shields.io/badge/Render-Deploy-46e3b7?style=flat-square&logo=render&logoColor=111111" alt="Deploy to Render"></a>
-  <a href="https://github.com/basketikun/infinite-canvas"><img src="https://img.shields.io/github/stars/basketikun/infinite-canvas?style=flat-square&logo=github" alt="GitHub stars"></a>
-  <a href="https://github.com/basketikun/infinite-canvas/tags"><img src="https://img.shields.io/github/v/tag/basketikun/infinite-canvas?style=flat-square&label=version" alt="Version"></a>
+  <a href="https://render.com/deploy?repo=https://github.com/JuHexSecurity/infinite-canvas"><img src="https://img.shields.io/badge/Render-Deploy-46e3b7?style=flat-square&logo=render&logoColor=111111" alt="Deploy to Render"></a>
+  <a href="https://github.com/JuHexSecurity/infinite-canvas"><img src="https://img.shields.io/github/stars/JuHexSecurity/infinite-canvas?style=flat-square&logo=github" alt="GitHub stars"></a>
+  <a href="https://github.com/JuHexSecurity/infinite-canvas/tags"><img src="https://img.shields.io/github/v/tag/JuHexSecurity/infinite-canvas?style=flat-square&label=version" alt="Version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-f97316?style=flat-square" alt="License"></a>
   <a href="https://vite.dev/"><img src="https://img.shields.io/badge/Vite-7-646cff?style=flat-square&logo=vite&logoColor=white" alt="Vite"></a>
   <a href="https://reactrouter.com/"><img src="https://img.shields.io/badge/React_Router-7-ca4245?style=flat-square&logo=reactrouter&logoColor=white" alt="React Router"></a>
@@ -85,7 +85,7 @@
 ## 核心功能
 
 - 无限画布：多画布项目、节点拖拽缩放、连线、小地图、撤销重做、导入导出。
-- AI 创作：浏览器前台直连你配置的 OpenAI 兼容接口，支持文生图、图生图、参考图编辑、文本问答、音频和视频生成。
+- AI 创作：支持浏览器直连模式，也支持私有化部署模式；私有化模式由同源服务端网关统一转发 OpenAI/Gemini 兼容接口，支持文生图、图生图、参考图编辑、文本问答、音频和视频生成。
 - 画布助手：围绕选中节点和上游节点对话、生图，并把结果插回画布。
 - 本地 Agent：通过本机 Canvas Agent 连接 Codex / Claude Code，让 Agent 通过 MCP 操作当前画布；
 - Codex App 插件：提供 Codex app 插件，安装后会自动注册 MCP 并尝试拉起本地 Agent。
@@ -99,12 +99,12 @@
 
 ## 快速开始
 
-AI API Key、Base URL、画布、素材和生成记录默认保存在浏览器本地。
+浏览器直连模式下，AI API Key、Base URL、画布、素材和生成记录默认保存在浏览器本地；私有化模式下，上游 AI Key 由部署容器环境管理。
 
 ### 本地开发
 
 ```bash
-git clone git@github.com:basketikun/infinite-canvas.git
+git clone https://github.com/JuHexSecurity/infinite-canvas.git
 cd infinite-canvas
 cd web
 bun install
@@ -114,7 +114,7 @@ bun run dev
 ### Docker 运行
 
 ```bash
-git clone git@github.com:basketikun/infinite-canvas.git
+git clone https://github.com/JuHexSecurity/infinite-canvas.git
 cd infinite-canvas
 docker compose up -d
 ```
@@ -124,6 +124,36 @@ docker compose up -d
 首次打开后进入右上角配置，填入自己的 OpenAI 兼容 `Base URL` 和 `API Key`。
 
 如果默认的OpenAI接口调用方式与您的API不同，可自定义生图/视频脚本调用。
+
+### 私有化部署（推荐团队使用）
+
+私有化模式把 AI 请求放到部署容器内的同源网关中，浏览器不再直接访问上游接口，也不需要每台电脑运行本地 CORS 代理。上游地址和 API Key 只通过部署环境注入，不要写入前端代码、README、截图或公开仓库。
+
+```bash
+copy .env.example .env
+# 编辑 .env，至少填写 AI_UPSTREAM_BASE_URL 和 AI_UPSTREAM_API_KEY
+docker compose -f docker-compose.local.yml up -d --build
+```
+
+Linux/macOS 使用 `cp .env.example .env`。上面的命令从当前源码构建镜像；如果已发布并确认 fork 的 GHCR 镜像可用，也可以改用 `docker compose up -d`。私有化模式的关键变量如下：
+
+| 变量 | 说明 |
+| --- | --- |
+| `PRIVATE_DEPLOYMENT` | 设置为 `true`，启动同源 AI 网关 |
+| `AI_UPSTREAM_BASE_URL` | 上游 OpenAI/Gemini 兼容接口地址，不含真实 Key |
+| `AI_UPSTREAM_API_KEY` | 只放在服务器环境或未提交的 `.env` 中 |
+| `AI_UPSTREAM_API_FORMAT` | `openai` 或 `gemini` |
+| `AI_GATEWAY_URL` | 前端网关地址，默认 `/api/ai` |
+| `AI_CORS_ORIGIN` | 需要跨域访问时的允许来源；同源部署通常无需调整 |
+
+私有化模式默认使用单个服务端渠道，用户在网页中只选择模型，不填写上游 Key。网关只接受 `/v1` 和 `/v1beta` 路径，并由 Nginx 转发到同一容器内的网关进程。请在内网或带认证的反向代理后使用，不要把未加认证的网关暴露到公网。
+
+### 安全说明
+
+- 公开仓库和公开 Docker 镜像中不得包含真实 API Key、WebDAV 密码、SSH 凭据或导出的配置 JSON。
+- 浏览器直连模式会把 API Key 保存在浏览器本地，仅适合个人或可信环境。
+- 团队部署请使用私有化模式，并通过服务器环境变量或密钥管理系统注入 Key。
+- 任何曾经出现在截图、日志、聊天记录或公开提交中的 Key 都应立即撤销并重新生成。
 
 ## 效果展示
 
@@ -172,8 +202,8 @@ docker compose up -d
 
 <a href="https://www.star-history.com/?repos=basketikun%2Finfinite-canvas&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=basketikun/infinite-canvas&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=basketikun/infinite-canvas&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=basketikun/infinite-canvas&type=date&legend=top-left" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=JuHexSecurity/infinite-canvas&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=JuHexSecurity/infinite-canvas&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=JuHexSecurity/infinite-canvas&type=date&legend=top-left" />
  </picture>
 </a>

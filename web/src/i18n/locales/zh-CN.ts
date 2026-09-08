@@ -515,6 +515,7 @@ export default {
             name: "渠道名称",
             protocol: "协议",
             baseUrl: "接口地址",
+            serverManaged: "由服务端管理",
             models: "渠道模型",
             modelDescription: "已选 {{count}} 个；为每个模型指定能力并可自定义调用脚本。",
             selectModels: "选择模型",
@@ -529,7 +530,7 @@ export default {
             },
         },
         modelSelect: {
-            missingConfig: "请先填写接口地址和 API Key",
+            missingConfig: "请先填写接口地址和 API Key（私有化部署由服务端管理 Key）",
             fetched: "已拉取 {{count}} 个模型",
             fetchFailed: "拉取模型失败",
             title: "选择渠道模型",

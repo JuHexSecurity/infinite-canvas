@@ -10,7 +10,7 @@ description: 使用 Docker Compose 部署无限画布
 ## 使用发布镜像
 
 ```bash
-git clone git@github.com:basketikun/infinite-canvas.git
+git clone https://github.com/JuHexSecurity/infinite-canvas.git
 cd infinite-canvas
 docker compose up -d
 ```
@@ -49,7 +49,30 @@ docker compose -f docker-compose.local.yml up -d --build
 
 ## 数据说明
 
-当前主应用镜像只启动 Next.js。画布、我的素材、生成记录和 AI API Key 默认保存在浏览器本地；第三方提示词由浏览器前端直连拉取，不需要额外挂载数据目录。
+当前主应用镜像提供前端，并可在私有化模式下启动同源 AI 网关。画布、我的素材和生成记录默认保存在浏览器本地；浏览器直连模式下 AI API Key 也保存在浏览器本地，私有化模式下则由服务器环境管理。
+
+## 私有化 AI 网关
+
+团队部署可以启用容器内同源 AI 网关，避免用户在浏览器中保存上游 API Key，也不需要每台电脑单独运行本地 CORS 代理。复制 `.env.example` 为 `.env`，只在未提交的环境文件或部署平台密钥中填写真实值：
+
+```bash
+cp .env.example .env
+docker compose up -d
+```
+
+上面的命令使用发布镜像；如果 fork 的 GHCR 镜像尚未发布，改用 `docker compose -f docker-compose.local.yml up -d --build` 从当前源码构建。
+
+至少配置：
+
+```dotenv
+PRIVATE_DEPLOYMENT=true
+AI_UPSTREAM_BASE_URL=https://api.example.com
+AI_UPSTREAM_API_KEY=replace-with-a-secret
+AI_UPSTREAM_API_FORMAT=openai
+AI_GATEWAY_URL=/api/ai
+```
+
+私有化网关只转发 `/v1` 和 `/v1beta` 请求，并从服务器环境变量注入认证头。不要把 Key 写入 Compose 文件、前端运行时配置、README、截图或公开仓库；生产环境还应在外层反向代理增加登录、内网访问限制或其他认证。
 
 ## 统计分析（可选）
 
@@ -67,7 +90,7 @@ docker compose -f docker-compose.local.yml up -d --build
 ```yaml
 services:
   app:
-    image: ghcr.io/basketikun/infinite-canvas:latest
+    image: ghcr.io/juhexsecurity/infinite-canvas:latest
     ports:
       - "3000:3000"
     environment:
@@ -81,7 +104,7 @@ services:
 docker run -d -p 3000:3000 \
   -e ANALYTICS_GA4_ID=G-XXXXXXXXXX \
   -e ANALYTICS_BAIDU_ID=e8263761cc5c32f5f7a855b8203b965a \
-  ghcr.io/basketikun/infinite-canvas:latest
+  ghcr.io/juhexsecurity/infinite-canvas:latest
 ```
 
 单页应用的路由切换会自动向所有已启用的统计上报 pageview。

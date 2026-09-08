@@ -515,6 +515,7 @@ export default {
             name: "Provider name",
             protocol: "Protocol",
             baseUrl: "API endpoint",
+            serverManaged: "managed by server",
             models: "Provider models",
             modelDescription: "{{count}} selected; assign a capability to each model and optionally customize its request script.",
             selectModels: "Select models",
@@ -529,7 +530,7 @@ export default {
             },
         },
         modelSelect: {
-            missingConfig: "Enter an API endpoint and API key first",
+            missingConfig: "Enter an API endpoint and API key first (private deployments manage the key on the server)",
             fetched: "Fetched {{count}} models",
             fetchFailed: "Failed to fetch models",
             title: "Select provider models",

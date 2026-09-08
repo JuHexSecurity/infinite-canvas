@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { nanoid } from "nanoid";
 
+import { AI_GATEWAY_URL, PRIVATE_DEPLOYMENT } from "@/constant/runtime-config";
 import i18n from "@/i18n";
 
 export type ApiCallFormat = "openai" | "gemini";
@@ -76,6 +77,14 @@ const OPENAI_BASE_URL = "https://api.openai.com";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com";
 export const LOCAL_PROXY_PACKAGE = "@basketikun/canvas-proxy";
 export const DEFAULT_LOCAL_PROXY_URL = "http://127.0.0.1:23210";
+
+export function isPrivateDeployment() {
+    return PRIVATE_DEPLOYMENT && Boolean(AI_GATEWAY_URL.trim());
+}
+
+export function hasConfiguredApiKey(config: Pick<AiConfig, "apiKey">) {
+    return isPrivateDeployment() || Boolean(config.apiKey.trim());
+}
 
 export const defaultConfig: AiConfig = {
     channelMode: "local",
@@ -200,7 +209,7 @@ export function resolveModelScript(config: AiConfig, value: string) {
 
 function isAiConfigReady(config: AiConfig, model: string) {
     const channel = resolveModelChannel(config, model);
-    return Boolean(model.trim() && channel.baseUrl.trim() && channel.apiKey.trim());
+    return Boolean(model.trim() && channel.baseUrl.trim() && (isPrivateDeployment() || channel.apiKey.trim()));
 }
 
 export const useConfigStore = create<ConfigStore>()(
@@ -461,6 +470,7 @@ function normalizeChannels(config: AiConfig) {
 }
 
 export function defaultBaseUrlForApiFormat(apiFormat: ApiCallFormat) {
+    if (isPrivateDeployment()) return AI_GATEWAY_URL;
     if (apiFormat === "gemini") return GEMINI_BASE_URL;
     return OPENAI_BASE_URL;
 }
@@ -488,9 +498,21 @@ export function normalizeLocalProxyUrl(value: string) {
 
 /** Prefix an outgoing request with the local forwarding proxy so the browser is not blocked by CORS. */
 export function withLocalProxy(url: string) {
+    if (isPrivateDeployment() && (/^https?:\/\//i.test(url) || url.startsWith("/"))) return withPrivateGateway(url);
     const { proxyEnabled, proxyUrl } = useConfigStore.getState().config;
     if (!proxyEnabled || !/^https?:\/\//i.test(url)) return url;
     const base = normalizeLocalProxyUrl(proxyUrl);
     if (!base || url.startsWith(`${base}/`)) return url;
     return `${base}/${url}`;
+}
+
+function withPrivateGateway(url: string) {
+    const origin = typeof window === "undefined" ? "http://private-gateway.local" : window.location.origin;
+    const gateway = new URL(AI_GATEWAY_URL.trim() || "/api/ai", origin);
+    const target = new URL(url, origin);
+    const gatewayPath = gateway.pathname.replace(/\/+$/, "");
+    if (gatewayPath && (target.pathname === gatewayPath || target.pathname.startsWith(`${gatewayPath}/`))) return target.toString();
+    gateway.pathname = `${gatewayPath}/${target.pathname.replace(/^\/+/, "")}`.replace(/\/+/g, "/");
+    gateway.search = target.search;
+    return gateway.toString();
 }

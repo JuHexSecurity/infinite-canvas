@@ -14,7 +14,7 @@ description: 用最少步骤把无限画布跑起来
 ## 本地启动
 
 ```bash
-git clone git@github.com:basketikun/infinite-canvas.git
+git clone https://github.com/JuHexSecurity/infinite-canvas.git
 cd infinite-canvas
 cd web
 bun install
@@ -45,4 +45,4 @@ docker run --rm -p 3000:3000 infinite-canvas
 ## 说明
 
 - 当前画布项目和“我的素材”主要保存在浏览器本地，WebDAV 同步需要用户自行配置。
-- AI API Key 保存在浏览器本地，并由前端直接请求 OpenAI 兼容接口。
+- 浏览器直连模式下，AI API Key 保存在浏览器本地并由浏览器直接请求接口；团队使用时可按 [Docker 部署](/zh-CN/docs/overview/docker) 启用私有化 AI 网关。

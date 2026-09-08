@@ -14,9 +14,22 @@ sanitize_id() {
 GA4_ID=$(sanitize_id "${ANALYTICS_GA4_ID:-}")
 BAIDU_ID=$(sanitize_id "${ANALYTICS_BAIDU_ID:-}")
 
+sanitize_runtime_url() {
+    printf '%s' "$1" | tr -cd 'A-Za-z0-9:/?._-'
+}
+
+PRIVATE_MODE=$(printf '%s' "${PRIVATE_DEPLOYMENT:-false}" | tr '[:upper:]' '[:lower:]')
+GATEWAY_URL=$(sanitize_runtime_url "${AI_GATEWAY_URL:-/api/ai}")
+
+if [ "$PRIVATE_MODE" = "true" ]; then
+    node /opt/infinite-canvas/private-gateway/index.js &
+fi
+
 cat > /usr/share/nginx/html/config.js <<EOF
 window.__RUNTIME_CONFIG__ = {
   ANALYTICS_GA4_ID: "${GA4_ID}",
-  ANALYTICS_BAIDU_ID: "${BAIDU_ID}"
+  ANALYTICS_BAIDU_ID: "${BAIDU_ID}",
+  PRIVATE_DEPLOYMENT: "${PRIVATE_MODE}",
+  AI_GATEWAY_URL: "${GATEWAY_URL}"
 };
 EOF

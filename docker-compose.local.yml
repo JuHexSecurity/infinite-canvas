@@ -7,3 +7,11 @@ services:
     ports:
       - "3000:3000"
     restart: unless-stopped
+    environment:
+      PRIVATE_DEPLOYMENT: ${PRIVATE_DEPLOYMENT:-false}
+      AI_GATEWAY_URL: ${AI_GATEWAY_URL:-/api/ai}
+      AI_GATEWAY_PORT: ${AI_GATEWAY_PORT:-8787}
+      AI_UPSTREAM_BASE_URL: ${AI_UPSTREAM_BASE_URL:-}
+      AI_UPSTREAM_API_KEY: ${AI_UPSTREAM_API_KEY:-}
+      AI_UPSTREAM_API_FORMAT: ${AI_UPSTREAM_API_FORMAT:-openai}
+      AI_CORS_ORIGIN: "${AI_CORS_ORIGIN:-}"

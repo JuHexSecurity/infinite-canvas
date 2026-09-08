@@ -8,6 +8,8 @@
 type RuntimeConfig = {
     ANALYTICS_GA4_ID?: string; // GA4 measurement ID (G-XXXX)
     ANALYTICS_BAIDU_ID?: string; // Baidu Analytics site ID
+    PRIVATE_DEPLOYMENT?: string | boolean;
+    AI_GATEWAY_URL?: string;
 };
 
 declare global {
@@ -27,3 +29,5 @@ function read(key: keyof RuntimeConfig, buildTime: string | undefined, fallback 
 
 export const ANALYTICS_GA4_ID = read("ANALYTICS_GA4_ID", import.meta.env.VITE_ANALYTICS_GA4_ID);
 export const ANALYTICS_BAIDU_ID = read("ANALYTICS_BAIDU_ID", import.meta.env.VITE_ANALYTICS_BAIDU_ID);
+export const PRIVATE_DEPLOYMENT = String(runtime.PRIVATE_DEPLOYMENT ?? import.meta.env.VITE_PRIVATE_DEPLOYMENT ?? "false").toLowerCase() === "true";
+export const AI_GATEWAY_URL = read("AI_GATEWAY_URL", import.meta.env.VITE_AI_GATEWAY_URL, "/api/ai");

@@ -1,11 +1,19 @@
 services:
   app:
-    image: ghcr.io/basketikun/infinite-canvas:latest
+    image: ghcr.io/juhexsecurity/infinite-canvas:latest
     container_name: infinite-canvas
     ports:
       - "3000:3000"
     restart: unless-stopped
+    # 私有化部署时打开 PRIVATE_DEPLOYMENT，并通过 .env 注入上游地址和 Key；不要把真实值提交到仓库。
+    environment:
+      PRIVATE_DEPLOYMENT: ${PRIVATE_DEPLOYMENT:-false}
+      AI_GATEWAY_URL: ${AI_GATEWAY_URL:-/api/ai}
+      AI_GATEWAY_PORT: ${AI_GATEWAY_PORT:-8787}
+      AI_UPSTREAM_BASE_URL: ${AI_UPSTREAM_BASE_URL:-}
+      AI_UPSTREAM_API_KEY: ${AI_UPSTREAM_API_KEY:-}
+      AI_UPSTREAM_API_FORMAT: ${AI_UPSTREAM_API_FORMAT:-openai}
+      AI_CORS_ORIGIN: "${AI_CORS_ORIGIN:-}"
     # 统计分析（可选，默认关闭）。每家一个独立变量，填了谁就启用谁，可同时启用多家：
-    # environment:
     #   ANALYTICS_GA4_ID: G-XXXXXXXXXX                    # Google Analytics 4 衡量 ID
     #   ANALYTICS_BAIDU_ID: xxxxxxxxxxxxxxxxxxxxxxxxxxxx   # 百度统计站点 ID
