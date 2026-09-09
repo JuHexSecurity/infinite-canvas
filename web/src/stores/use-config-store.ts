@@ -188,8 +188,14 @@ export function modelCapabilityOf(config: AiConfig, value: string): ModelCapabil
     return findChannelModel(config, value)?.model.capability;
 }
 
+function isKnownTextOnlyModel(value: string) {
+    const name = modelOptionName(value).toLowerCase();
+    return /^(?:gpt-5(?:[.-]|$)|codex(?:[.-]|$)|o[1345](?:[.-]|$))/.test(name);
+}
+
 export function modelMatchesCapability(config: AiConfig, value: string, capability?: ModelCapability) {
     if (!capability) return true;
+    if (capability === "image" && isKnownTextOnlyModel(value)) return false;
     return modelCapabilityOf(config, value) === capability;
 }
 
@@ -203,7 +209,7 @@ export function resolveModelForCapability(config: AiConfig, currentModel: string
 
 export function selectableModelsByCapability(config: AiConfig, capability?: ModelCapability) {
     if (!capability) return config.models;
-    return config.channels.flatMap((channel) => channel.models.filter((model) => model.capability === capability).map((model) => encodeChannelModel(channel.id, model.name)));
+    return config.channels.flatMap((channel) => channel.models.filter((model) => model.capability === capability && modelMatchesCapability(config, encodeChannelModel(channel.id, model.name), capability)).map((model) => encodeChannelModel(channel.id, model.name)));
 }
 
 /** The user script (if any) attached to a model; empty string means use the system default call. */
