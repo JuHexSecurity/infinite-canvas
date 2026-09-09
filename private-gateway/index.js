@@ -13,8 +13,10 @@ const allowedOrigins = String(process.env.AI_CORS_ORIGIN || "")
     .map((value) => value.trim())
     .filter(Boolean);
 
-function upstreamBaseUrl() {
-    const value = String(process.env.AI_UPSTREAM_BASE_URL || "").trim();
+function upstreamBaseUrl(req) {
+    const serverKey = String(process.env.AI_UPSTREAM_API_KEY || "").trim();
+    const clientValue = allowClientKeys && !serverKey && req ? String(req.headers["x-ai-upstream-base-url"] || "").trim() : "";
+    const value = clientValue || String(process.env.AI_UPSTREAM_BASE_URL || "").trim();
     if (!value) return null;
     try {
         const url = new URL(value);
@@ -31,7 +33,7 @@ function corsHeaders(req) {
     return {
         ...(allowOrigin ? { "access-control-allow-origin": allowOrigin } : {}),
         "access-control-allow-methods": "GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS",
-        "access-control-allow-headers": "Authorization, Content-Type, Accept, X-Api-Key, X-Goog-Api-Key",
+        "access-control-allow-headers": "Authorization, Content-Type, Accept, X-Api-Key, X-Goog-Api-Key, X-AI-Upstream-Base-Url",
         "access-control-expose-headers": "Content-Type, Content-Length, Location",
         "access-control-max-age": "86400",
     };
@@ -44,7 +46,7 @@ function sendJson(req, res, status, payload) {
 }
 
 function targetUrl(req) {
-    const base = upstreamBaseUrl();
+    const base = upstreamBaseUrl(req);
     if (!base) return null;
     const incoming = new URL(req.url || "/", "http://private-gateway.local");
     if (!/^\/v1(?:beta)?(?:\/|$)/i.test(incoming.pathname)) return null;
@@ -63,7 +65,7 @@ function requestHeaders(req, target) {
     const clientAuthorization = headers.authorization;
     const clientApiKey = headers["x-api-key"];
     const clientGoogleApiKey = headers["x-goog-api-key"];
-    for (const name of ["connection", "origin", "referer", "x-forwarded-for", "x-forwarded-host", "x-forwarded-proto", "authorization", "x-api-key", "x-goog-api-key"]) delete headers[name];
+    for (const name of ["connection", "origin", "referer", "x-forwarded-for", "x-forwarded-host", "x-forwarded-proto", "x-ai-upstream-base-url", "authorization", "x-api-key", "x-goog-api-key"]) delete headers[name];
     const key = String(process.env.AI_UPSTREAM_API_KEY || "").trim();
     if (apiFormat === "gemini") {
         if (key) headers["x-goog-api-key"] = key;
@@ -120,7 +122,7 @@ const server = http.createServer((req, res) => {
         return;
     }
     if (req.url === "/healthz") {
-        const configured = Boolean(upstreamBaseUrl() && (String(process.env.AI_UPSTREAM_API_KEY || "").trim() || allowClientKeys));
+        const configured = Boolean(upstreamBaseUrl(req) && (String(process.env.AI_UPSTREAM_API_KEY || "").trim() || allowClientKeys));
         sendJson(req, res, configured ? 200 : 503, { service: "infinite-canvas-private-gateway", configured, clientKeysAllowed: allowClientKeys, apiFormat });
         return;
     }

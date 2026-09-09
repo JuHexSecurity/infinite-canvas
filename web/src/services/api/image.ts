@@ -1,6 +1,7 @@
 import axios from "axios";
 
 import i18n from "@/i18n";
+import { AI_ALLOW_CLIENT_KEYS, PRIVATE_DEPLOYMENT } from "@/constant/runtime-config";
 import { buildApiUrl, isServerManagedKeyDeployment, resolveModelRequestConfig, resolveModelScript, withLocalProxy, type AiConfig, type ModelChannel } from "@/stores/use-config-store";
 import { normalizePluginImages, runModelPlugin } from "./model-plugin";
 import { nanoid } from "nanoid";
@@ -345,6 +346,7 @@ function aiApiUrl(config: AiConfig, path: string) {
 
 function aiHeaders(config: AiConfig, contentType?: string) {
     return {
+        ...(PRIVATE_DEPLOYMENT && AI_ALLOW_CLIENT_KEYS ? { "x-ai-upstream-base-url": config.baseUrl } : {}),
         ...(isServerManagedKeyDeployment() ? {} : { Authorization: `Bearer ${config.apiKey}` }),
         ...(contentType ? { "Content-Type": contentType } : {}),
     };
@@ -895,7 +897,10 @@ export async function fetchImageModels(config: Pick<AiConfig, "baseUrl" | "apiKe
                 .sort((a, b) => a.localeCompare(b));
         }
         const response = await axios.get<{ data?: Array<{ id?: string }>; error?: { message?: string } }>(buildApiUrl(config.baseUrl, "/models"), {
-            headers: isServerManagedKeyDeployment() ? undefined : { Authorization: `Bearer ${config.apiKey}` },
+            headers: {
+                ...(PRIVATE_DEPLOYMENT && AI_ALLOW_CLIENT_KEYS ? { "x-ai-upstream-base-url": config.baseUrl } : {}),
+                ...(isServerManagedKeyDeployment() ? {} : { Authorization: `Bearer ${config.apiKey}` }),
+            },
         });
         return (response.data.data || [])
             .map((model) => model.id)
